@@ -1,0 +1,14 @@
+# Source files (we ship dist/ only)
+src/
+
+# Tests
+test/
+coverage/
+jest.config.js
+
+# Demo files
+demo/
+
+# Build configuration
+tsconfig.json
+webpack.config.js

@@ -1,0 +1,56 @@
+{
+  "name": "@geoapify/batch-geocoding",
+  "version": "1.0.0",
+  "description": "Batch forward and reverse geocoding using Geoapify's async batch engine with a simple Job-based API",
+  "main": "dist/batch-geocoding.js",
+  "types": "dist/batch-geocoding.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run compile && webpack",
+    "compile": "tsc",
+    "clean": "rm -rf dist",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geoapify/batch-geocoding.git"
+  },
+  "author": {
+    "name": "Geoapify GmbH",
+    "email": "info@geoapify.com",
+    "url": "https://geoapify.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/geoapify/batch-geocoding/issues"
+  },
+  "homepage": "https://github.com/geoapify/batch-geocoding#readme",
+  "keywords": [
+    "geocoding",
+    "batch-geocoding",
+    "geoapify",
+    "reverse-geocoding",
+    "address-lookup",
+    "coordinates",
+    "latitude",
+    "longitude",
+    "address-to-coordinates",
+    "coordinates-to-address",
+    "batch-processing",
+    "async-geocoding",
+    "typescript"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "ts-loader": "^9.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
