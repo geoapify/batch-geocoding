@@ -36,7 +36,6 @@ export class ResultsFilter {
       });
       csvLines.push(row.join(','));
     });
-
     return csvLines.join('\n');
   }
 }
