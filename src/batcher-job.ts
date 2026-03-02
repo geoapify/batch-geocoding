@@ -9,7 +9,7 @@ import {
   JobState,
   ProgressCallback, JOB_STATE
 } from "./types";
-import { ResultsFilter } from "./helpers";
+import { ResultConverter } from "./helpers";
 
 const DEFAULT_POLL_INTERVAL_MS = 1000;
 
@@ -18,7 +18,7 @@ export class BatcherJob {
 
   private readonly pollIntervalMs: number;
 
-  private resultsCache: GeocodingResultJson | null = null;
+  private resultsCache: GeocodingResultJson = [];
 
   private state: JobState = JOB_STATE.SUBMITTING;
   private progressCallbacks: ProgressCallback[] = [];
@@ -80,21 +80,10 @@ export class BatcherJob {
       const response = await this.apiClient.submitJob(this.operation);
       this.id = response.id;
       this.updateState(JOB_STATE.PENDING);
-      this.startPolling();
+      this.pollingTimer = setTimeout(() => this.poll(), this.pollIntervalMs);
     } catch (error) {
       this.updateState(JOB_STATE.FAILED);
       this.finishedReject(error as Error);
-    }
-  }
-
-  private startPolling(): void {
-    this.pollingTimer = setTimeout(() => this.poll(), this.pollIntervalMs);
-  }
-
-  private stopPolling(): void {
-    if (this.pollingTimer) {
-      clearTimeout(this.pollingTimer);
-      this.pollingTimer = null;
     }
   }
 
@@ -108,14 +97,20 @@ export class BatcherJob {
         this.updateState(JOB_STATE.PENDING);
         this.pollingTimer = setTimeout(() => this.poll(), this.pollIntervalMs);
       } else {
-        this.resultsCache = result.results ?? [];
+        this.resultsCache = result.results ? result.results : [];
         this.updateState(JOB_STATE.FINISHED);
-        this.stopPolling();
+        if (this.pollingTimer) {
+          clearTimeout(this.pollingTimer);
+          this.pollingTimer = null;
+        }
         this.finishedResolve();
       }
     } catch (error) {
       this.updateState(JOB_STATE.FAILED);
-      this.stopPolling();
+      if (this.pollingTimer) {
+        clearTimeout(this.pollingTimer);
+        this.pollingTimer = null;
+      }
       this.finishedReject(error as Error);
     }
   }
@@ -138,26 +133,26 @@ export class BatcherJob {
 
   private buildBatchResult(options?: BatchGeocodeOptions): BatchResult {
     const preserveFields = options?.preserveFields ?? this.operation.options?.preserveFields;
+    const hasFilteredFields = (preserveFields && preserveFields.length > 0);
 
     return {
       json: async (): Promise<GeocodingResultJson> => {
-        const results = this.resultsCache ?? [];
+        let filteredResults = this.resultsCache;
         
         if (!preserveFields || preserveFields.length === 0) {
-          return results;
+          return filteredResults;
         }
         
-        return ResultsFilter.filterJson(results, preserveFields);
+        return ResultConverter.filterJson(filteredResults, preserveFields);
       },
 
       csv: async (): Promise<string> => {
-        const results = this.resultsCache ?? [];
-        
-        const filteredResults = (preserveFields && preserveFields.length > 0)
-          ? ResultsFilter.filterJson(results, preserveFields)
-          : results;
-        
-        return ResultsFilter.jsonToCsv(filteredResults);
+        let filteredResults = this.resultsCache;
+        if(hasFilteredFields) {
+          filteredResults = ResultConverter.filterJson(filteredResults, preserveFields);
+        }
+
+        return ResultConverter.jsonToCsv(filteredResults);
       }
     };
   }

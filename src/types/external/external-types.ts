@@ -22,6 +22,7 @@ export interface BatchGeocodeOptions {
   pollIntervalMs?: number;
   preserveFields?: string[];
   priority?: number;
+  apiKey?: string;
 }
 
 export const JOB_STATE = {
@@ -36,10 +37,6 @@ export type JobState = typeof JOB_STATE[keyof typeof JOB_STATE];
 
 export interface JobStatus {
   state: JobState;
-  progress?: {
-    done?: number;
-    total?: number;
-  };
 }
 
 export type ProgressCallback = (status: JobStatus) => void;

@@ -4,15 +4,15 @@ import { GeocodingResult, ReverseGeocodingResult } from "../external/external-ty
 export interface BatchInput {
   id?: string;
   params?: any;
-  body?: Record<string, unknown>;
 }
 
 export interface BatchRequestBody {
   api: string;
-  params?: Record<string, unknown>;
-  body?: Record<string, unknown>;
   priority?: number;
   inputs: BatchInput[];
+  params: {
+    limit: string
+  };
 }
 
 export interface SubmitJobResponse {
@@ -24,9 +24,4 @@ export interface JobStatusResult {
   id: string;
   pending: boolean;
   results?: GeocodingResult[] | ReverseGeocodingResult[];
-}
-
-export interface PendingJobResponse {
-  id: string;
-  status: string;
 }

@@ -3,53 +3,42 @@ import {
   BatchGeocodeOptions,
   BatchInput,
   BatchRequestBody,
-  Coordinates,
-  CoordinatesObject,
   GeocodingOperation,
   GeocodingResult,
   JobNotFoundError,
   JobStatusResult,
   JobSubmitError,
   OperationType,
-  PendingJobResponse,
   ReverseGeocodingResult,
-  StructuredAddress,
   SubmitJobResponse
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://api.geoapify.com";
+const REQUEST_PARAM_LIMIT = "1";
 
 export class ApiClient {
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
-
-  constructor(apiKey: string, base_url?: string) {
-    this.apiKey = apiKey;
-    this.baseUrl = base_url || DEFAULT_BASE_URL;
-  }
+  private options: BatchGeocodeOptions | undefined;
 
   async submitJob(operation: GeocodingOperation): Promise<SubmitJobResponse> {
+    this.options = operation.options;
     if (operation.type === OperationType.Forward) {
-      return this.submitForwardJob(operation.addresses!, operation.options);
+      const inputs: BatchInput[] = operation.addresses!.map((item) => ({ params: item  }));
+      return this.executeSubmitJob("/v1/geocode/search", inputs, operation.options);
     } else {
-      return this.submitReverseJob(operation.coordinates!, operation.options);
+      const inputs: BatchInput[] = operation.coordinates!.map((coord) => ({
+        params: (() => {
+          if (Array.isArray(coord)) {
+            return { lon: coord[0], lat: coord[1] };
+          }
+          return coord;
+        })(),
+      }));
+      return this.executeSubmitJob("/v1/geocode/reverse", inputs, operation.options);
     }
   }
 
-  private async submitForwardJob(items: StructuredAddress[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const inputs: BatchInput[] = items.map((item) => ({ params: item  }));
-    return this.executeSubmitJob("/v1/geocode/search", inputs, options);
-  }
-
-  private async submitReverseJob(coordinates: Coordinates[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const inputs: BatchInput[] = coordinates.map((coord) => ({
-      params: this.normalizeCoordinates(coord)
-    }));
-    return this.executeSubmitJob("/v1/geocode/reverse", inputs, options);
-  }
-
   async getJobStatus(jobId: string): Promise<JobStatusResult> {
-    const url = `${this.getBatchUrl()}?id=${encodeURIComponent(jobId)}&apiKey=${this.apiKey}`;
+    const url = `${DEFAULT_BASE_URL}/v1/batch?id=${encodeURIComponent(jobId)}&apiKey=${this.options?.apiKey}`;
 
     const response = await fetch(url);
 
@@ -58,7 +47,7 @@ export class ApiClient {
     }
 
     if (response.status === 202) {
-      const body = (await response.json()) as PendingJobResponse;
+      const body = (await response.json()) as SubmitJobResponse;
       return {
         id: body.id,
         pending: true
@@ -104,11 +93,14 @@ export class ApiClient {
   }
 
   private async executeSubmitJob(api: string, inputs: BatchInput[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const url = `${this.getBatchUrl()}?apiKey=${this.apiKey}`;
+    const url = `${DEFAULT_BASE_URL}/v1/batch?apiKey=${options?.apiKey}`;
 
     const body: BatchRequestBody = {
-      api,
-      inputs
+      api: api,
+      inputs: inputs,
+      params: {
+        limit: REQUEST_PARAM_LIMIT
+      }
     };
 
     if (options?.priority !== undefined) {
@@ -133,16 +125,5 @@ export class ApiClient {
 
     const data = await response.json();
     return data as SubmitJobResponse;
-  }
-
-  private normalizeCoordinates(coord: Coordinates): CoordinatesObject {
-    if (Array.isArray(coord)) {
-      return { lon: coord[0], lat: coord[1] };
-    }
-    return coord;
-  }
-
-  private getBatchUrl(): string {
-    return `${this.baseUrl}/v1/batch`;
   }
 }

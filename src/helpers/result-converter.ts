@@ -1,6 +1,6 @@
 import { GeocodingResultJson } from "../types";
 
-export class ResultsFilter {
+export class ResultConverter {
   static filterJson(results: GeocodingResultJson, fields: string[]): GeocodingResultJson {
     return results.map(result => {
       const filtered = { ...result };

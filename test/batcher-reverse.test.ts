@@ -1,5 +1,6 @@
 import { Batcher } from "../src/batcher";
 import TEST_API_KEY from "../env-variables";
+import { ValidationError } from "../src";
 
 describe("Batcher - Reverse Geocoding E2E", () => {
   let batcher: Batcher;
@@ -90,5 +91,19 @@ describe("Batcher - Reverse Geocoding E2E", () => {
     expect(json[0].country).toBeDefined();
     expect(json[0].formatted).toBeNull();
     expect(json[0].street).toBeNull();
+  }, 120000);
+
+  it("should return validation if 1001 rows are passed", async () => {
+    const coordinates1001 = Array(1001)
+        .fill({ lat: 41.9028, lon: 12.4964 })
+        .flat()
+        .slice(0, 1001);
+    try {
+      batcher.reverseGeocode(coordinates1001, {pollIntervalMs: 2000});
+      fail();
+    } catch (e: any) {
+      expect(e).toBeInstanceOf(ValidationError);
+      expect(e.message).toBe("Batch size should be less than 1000");
+    }
   }, 120000);
 });
