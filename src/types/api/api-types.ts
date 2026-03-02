@@ -3,7 +3,7 @@ import { GeocodingResult, ReverseGeocodingResult } from "../external/external-ty
 
 export interface BatchInput {
   id?: string;
-  params?: Record<string, unknown>;
+  params?: any;
   body?: Record<string, unknown>;
 }
 

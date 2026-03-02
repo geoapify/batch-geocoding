@@ -10,8 +10,12 @@
   "scripts": {
     "build": "npm run clean && npm run compile && webpack",
     "compile": "tsc",
+    "compile:env": "tsc env-variables.ts --module commonjs --esModuleInterop",
     "clean": "rm -rf dist",
-    "test": "jest"
+    "test": "jest",
+    "demo:prepare": "npm run compile:env && npm run build",
+    "demo:ts": "npm run demo:prepare && ts-node demo/typescript/basic-usage.ts",
+    "demo:js": "npm run demo:prepare && node demo/javascript/basic-usage.js"
   },
   "repository": {
     "type": "git",

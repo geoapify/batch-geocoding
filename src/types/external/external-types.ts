@@ -24,7 +24,15 @@ export interface BatchGeocodeOptions {
   priority?: number;
 }
 
-export type JobState = "submitting" | "pending" | "running" | "finished" | "failed";
+export const JOB_STATE = {
+  SUBMITTING: 'submitting',
+  PENDING: 'pending',
+  RUNNING: 'running',
+  FINISHED: 'finished',
+  FAILED: 'failed',
+} as const;
+
+export type JobState = typeof JOB_STATE[keyof typeof JOB_STATE];
 
 export interface JobStatus {
   state: JobState;

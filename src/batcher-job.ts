@@ -7,7 +7,7 @@ import {
   JobFailedError,
   JobStatus,
   JobState,
-  ProgressCallback
+  ProgressCallback, JOB_STATE
 } from "./types";
 import { ResultsFilter } from "./helpers";
 
@@ -20,7 +20,7 @@ export class BatcherJob {
 
   private resultsCache: GeocodingResultJson | null = null;
 
-  private state: JobState = "submitting";
+  private state: JobState = JOB_STATE.SUBMITTING;
   private progressCallbacks: ProgressCallback[] = [];
   private pollingTimer: ReturnType<typeof setTimeout> | null = null;
   private finishedPromise: Promise<void> | null = null;
@@ -52,7 +52,7 @@ export class BatcherJob {
   onProgress(callback: ProgressCallback): void {
     this.progressCallbacks.push(callback);
 
-    if (this.state !== "submitting") {
+    if (this.state !== JOB_STATE.SUBMITTING) {
       callback(this.getStatus());
     }
   }
@@ -68,8 +68,8 @@ export class BatcherJob {
 
     await this.finishedPromise;
 
-    if (this.state === "failed") {
-      throw new JobFailedError(this.id ?? "unknown");
+    if (this.state === JOB_STATE.FAILED) {
+      throw new JobFailedError(this.id ? this.id : "unknown");
     }
 
     return this.buildBatchResult(options);
@@ -79,10 +79,10 @@ export class BatcherJob {
     try {
       const response = await this.apiClient.submitJob(this.operation);
       this.id = response.id;
-      this.updateState("pending");
+      this.updateState(JOB_STATE.PENDING);
       this.startPolling();
     } catch (error) {
-      this.updateState("failed");
+      this.updateState(JOB_STATE.FAILED);
       this.finishedReject(error as Error);
     }
   }
@@ -105,16 +105,16 @@ export class BatcherJob {
       const result = await this.apiClient.getJobStatus(this.id);
 
       if (result.pending) {
-        this.updateState("pending");
+        this.updateState(JOB_STATE.PENDING);
         this.pollingTimer = setTimeout(() => this.poll(), this.pollIntervalMs);
       } else {
         this.resultsCache = result.results ?? [];
-        this.updateState("finished");
+        this.updateState(JOB_STATE.FINISHED);
         this.stopPolling();
         this.finishedResolve();
       }
     } catch (error) {
-      this.updateState("failed");
+      this.updateState(JOB_STATE.FAILED);
       this.stopPolling();
       this.finishedReject(error as Error);
     }

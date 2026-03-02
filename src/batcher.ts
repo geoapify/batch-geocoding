@@ -5,12 +5,12 @@ import { BatchGeocodeOptions, Coordinates, OperationType, StructuredAddress, Val
 export class Batcher {
   private readonly apiClient: ApiClient;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, base_url?: string) {
     if (!apiKey || apiKey.trim() === "") {
       throw new ValidationError("API key is required");
     }
 
-    this.apiClient = new ApiClient(apiKey);
+    this.apiClient = new ApiClient(apiKey, base_url);
   }
 
   geocode(items: StructuredAddress[], options?: BatchGeocodeOptions): BatcherJob {

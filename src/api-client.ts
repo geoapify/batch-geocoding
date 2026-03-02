@@ -17,13 +17,15 @@ import {
   SubmitJobResponse
 } from "./types";
 
-const BASE_URL = "https://api.geoapify.com/v1/batch";
+const DEFAULT_BASE_URL = "https://api.geoapify.com";
 
 export class ApiClient {
   private readonly apiKey: string;
+  private readonly baseUrl: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, base_url?: string) {
     this.apiKey = apiKey;
+    this.baseUrl = base_url || DEFAULT_BASE_URL;
   }
 
   async submitJob(operation: GeocodingOperation): Promise<SubmitJobResponse> {
@@ -35,19 +37,19 @@ export class ApiClient {
   }
 
   private async submitForwardJob(items: StructuredAddress[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const inputs: BatchInput[] = items.map((item) => ({ params: item as Record<string, unknown> }));
+    const inputs: BatchInput[] = items.map((item) => ({ params: item  }));
     return this.executeSubmitJob("/v1/geocode/search", inputs, options);
   }
 
   private async submitReverseJob(coordinates: Coordinates[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
     const inputs: BatchInput[] = coordinates.map((coord) => ({
-      params: this.normalizeCoordinates(coord) as unknown as Record<string, unknown>
+      params: this.normalizeCoordinates(coord)
     }));
     return this.executeSubmitJob("/v1/geocode/reverse", inputs, options);
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResult> {
-    const url = `${BASE_URL}?id=${encodeURIComponent(jobId)}&apiKey=${this.apiKey}`;
+    const url = `${this.getBatchUrl()}?id=${encodeURIComponent(jobId)}&apiKey=${this.apiKey}`;
 
     const response = await fetch(url);
 
@@ -93,7 +95,7 @@ export class ApiClient {
       };
     }
 
-    const errorBody = await this.safeParseJson(response);
+    const errorBody = await response.json();
     throw new ApiError(
       `Failed to get job status: ${response.statusText}`,
       response.status,
@@ -101,31 +103,8 @@ export class ApiClient {
     );
   }
 
-  async getResultsCsv(jobId: string): Promise<string> {
-    const url = `${BASE_URL}?id=${encodeURIComponent(jobId)}&apiKey=${this.apiKey}&format=csv`;
-
-    const response = await fetch(url);
-
-    if (response.status === 404) {
-      throw new JobNotFoundError(jobId);
-    }
-
-    if (response.status === 202) {
-      throw new ApiError("Job is still processing", 202);
-    }
-
-    if (!response.ok) {
-      throw new ApiError(
-        `Failed to get CSV results: ${response.statusText}`,
-        response.status
-      );
-    }
-
-    return response.text();
-  }
-
   private async executeSubmitJob(api: string, inputs: BatchInput[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const url = `${BASE_URL}?apiKey=${this.apiKey}`;
+    const url = `${this.getBatchUrl()}?apiKey=${this.apiKey}`;
 
     const body: BatchRequestBody = {
       api,
@@ -152,7 +131,8 @@ export class ApiClient {
       );
     }
 
-    return (await response.json()) as SubmitJobResponse;
+    const data = await response.json();
+    return data as SubmitJobResponse;
   }
 
   private normalizeCoordinates(coord: Coordinates): CoordinatesObject {
@@ -162,11 +142,7 @@ export class ApiClient {
     return coord;
   }
 
-  private async safeParseJson(response: Response): Promise<unknown> {
-    try {
-      return await response.json();
-    } catch {
-      return null;
-    }
+  private getBatchUrl(): string {
+    return `${this.baseUrl}/v1/batch`;
   }
 }

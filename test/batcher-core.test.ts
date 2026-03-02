@@ -1,11 +1,16 @@
 import { Batcher } from "../src/batcher";
-import { ValidationError } from "../src/types";
+import { JOB_STATE, ValidationError } from "../src/types";
 import TEST_API_KEY from "../env-variables";
 
 describe("Batcher - Core Functionality", () => {
   describe("constructor", () => {
     it("should create instance with valid API key", () => {
       const batcher = new Batcher(TEST_API_KEY);
+      expect(batcher).toBeInstanceOf(Batcher);
+    });
+
+    it("should create instance with API key and base_url", () => {
+      const batcher = new Batcher(TEST_API_KEY, "https://custom.api.com");
       expect(batcher).toBeInstanceOf(Batcher);
     });
 
@@ -55,7 +60,7 @@ describe("Batcher - Core Functionality", () => {
       const status = job.getStatus();
 
       expect(status.state).toBeDefined();
-      expect(["submitting", "pending", "running", "finished"]).toContain(status.state);
+      expect([JOB_STATE.SUBMITTING, JOB_STATE.PENDING, JOB_STATE.RUNNING, JOB_STATE.FINISHED]).toContain(status.state);
     }, 10000);
 
     it("should return BatcherJob with expected methods", () => {
