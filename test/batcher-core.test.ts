@@ -9,11 +9,6 @@ describe("Batcher - Core Functionality", () => {
       expect(batcher).toBeInstanceOf(Batcher);
     });
 
-    it("should create instance with API key and base_url", () => {
-      const batcher = new Batcher(TEST_API_KEY, "https://custom.api.com");
-      expect(batcher).toBeInstanceOf(Batcher);
-    });
-
     it("should throw ValidationError for empty API key", () => {
       expect(() => new Batcher("")).toThrow(ValidationError);
     });

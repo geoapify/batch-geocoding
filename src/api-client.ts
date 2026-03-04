@@ -17,10 +17,13 @@ const DEFAULT_BASE_URL = "https://api.geoapify.com";
 const REQUEST_PARAM_LIMIT = "1";
 
 export class ApiClient {
-  private options: BatchGeocodeOptions | undefined;
+  private readonly apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
 
   async submitJob(operation: GeocodingOperation): Promise<SubmitJobResponse> {
-    this.options = operation.options;
     if (operation.type === OperationType.Forward) {
       const inputs: BatchInput[] = operation.addresses!.map((item) => ({ params: item  }));
       return this.executeSubmitJob("/v1/geocode/search", inputs, operation.options);
@@ -38,7 +41,7 @@ export class ApiClient {
   }
 
   async getJobStatus(jobId: string): Promise<JobStatusResult> {
-    const url = `${DEFAULT_BASE_URL}/v1/batch?id=${encodeURIComponent(jobId)}&apiKey=${this.options?.apiKey}`;
+    const url = `${DEFAULT_BASE_URL}/v1/batch?id=${encodeURIComponent(jobId)}&apiKey=${this.apiKey}`;
 
     const response = await fetch(url);
 
@@ -93,7 +96,7 @@ export class ApiClient {
   }
 
   private async executeSubmitJob(api: string, inputs: BatchInput[], options?: BatchGeocodeOptions): Promise<SubmitJobResponse> {
-    const url = `${DEFAULT_BASE_URL}/v1/batch?apiKey=${options?.apiKey}`;
+    const url = `${DEFAULT_BASE_URL}/v1/batch?apiKey=${this.apiKey}`;
 
     const body: BatchRequestBody = {
       api: api,

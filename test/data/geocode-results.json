@@ -1,0 +1,140 @@
+[
+  {
+    "datasource": {
+      "sourcename": "openstreetmap",
+      "attribution": "© OpenStreetMap contributors",
+      "license": "Open Database License",
+      "url": "https://www.openstreetmap.org/copyright"
+    },
+    "country": "Netherlands",
+    "country_code": "nl",
+    "state": "South Holland",
+    "city": "Dordrecht",
+    "postcode": "3317 JN",
+    "street": "Salvia",
+    "housenumber": "22",
+    "iso3166_2": "NL-ZH",
+    "lon": 4.6730405,
+    "lat": 51.7937328,
+    "state_code": "ZH",
+    "NUTS_1": "NL33",
+    "result_type": "building",
+    "formatted": "Salvia 22, 3317 JN Dordrecht, Netherlands",
+    "address_line1": "Salvia 22",
+    "address_line2": "3317 JN Dordrecht, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F36QMVF+F6",
+    "plus_code_short": "QMVF+F6 Dordrecht, South Holland, Netherlands",
+    "rank": {
+      "importance": 0.00000999999999995449,
+      "popularity": 7.022069480769957,
+      "confidence": 1,
+      "confidence_city_level": 1,
+      "confidence_street_level": 1,
+      "confidence_building_level": 1,
+      "match_type": "full_match"
+    },
+    "place_id": "51b188618731b11240599ae1500999e54940f00103f901afc5c7a500000000c00203"
+  },
+  {
+    "datasource": {
+      "sourcename": "openstreetmap",
+      "attribution": "© OpenStreetMap contributors",
+      "license": "Open Database License",
+      "url": "https://www.openstreetmap.org/copyright"
+    },
+    "country": "Netherlands",
+    "country_code": "nl",
+    "state": "North Holland",
+    "city": "Amsterdam",
+    "postcode": "1012 NX",
+    "suburb": "Centrum",
+    "street": "Kalverstraat",
+    "housenumber": "1",
+    "iso3166_2": "NL-NH",
+    "lon": 4.8921404,
+    "lat": 52.3725041,
+    "state_code": "NH",
+    "NUTS_1": "NL32",
+    "result_type": "building",
+    "formatted": "Kalverstraat 1, 1012 NX Amsterdam, Netherlands",
+    "address_line1": "Kalverstraat 1",
+    "address_line2": "1012 NX Amsterdam, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F469VFR+2V",
+    "plus_code_short": "FR+2V Amsterdam, North Holland, Netherlands",
+    "rank": {
+      "importance": 0.00000999999999995449,
+      "popularity": 8.995467104553104,
+      "confidence": 1,
+      "confidence_city_level": 1,
+      "confidence_street_level": 1,
+      "confidence_building_level": 1,
+      "match_type": "full_match"
+    },
+    "place_id": "51edc2c5408d911340591e90df36ae2f4a40f00103f9016af25ca200000000c00203"
+  },
+  {
+    "datasource": {
+      "sourcename": "openstreetmap",
+      "attribution": "© OpenStreetMap contributors",
+      "license": "Open Database License",
+      "url": "https://www.openstreetmap.org/copyright"
+    },
+    "country": "Netherlands",
+    "country_code": "nl",
+    "state": "South Holland",
+    "city": "Rotterdam",
+    "postcode": "3011 AD",
+    "suburb": "Centrum",
+    "quarter": "Stadsdriehoek",
+    "street": "Coolsingel",
+    "housenumber": "40",
+    "iso3166_2": "NL-ZH",
+    "lon": 4.4792013,
+    "lat": 51.9227208,
+    "state_code": "ZH",
+    "NUTS_1": "NL33",
+    "result_type": "building",
+    "formatted": "Coolsingel 40, 3011 AD Rotterdam, Netherlands",
+    "address_line1": "Coolsingel 40",
+    "address_line2": "3011 AD Rotterdam, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F36WFFH+3M",
+    "plus_code_short": "+3M Rotterdam, South Holland, Netherlands",
+    "rank": {
+      "importance": 0.00000999999999995449,
+      "popularity": 8.935983947098983,
+      "confidence": 1,
+      "confidence_city_level": 1,
+      "confidence_street_level": 1,
+      "confidence_building_level": 1,
+      "match_type": "full_match"
+    },
+    "place_id": "5180cddebeb3ea11405963ab15b71bf64940f00103f901df14289b02000000c00203"
+  }
+]

@@ -22,7 +22,6 @@ export interface BatchGeocodeOptions {
   pollIntervalMs?: number;
   preserveFields?: string[];
   priority?: number;
-  apiKey?: string;
 }
 
 export const JOB_STATE = {

@@ -8,7 +8,7 @@ export class ResultConverter {
       
       for (const key in resultRecord) {
         if (!fields.includes(key)) {
-          resultRecord[key] = null;
+          delete resultRecord[key];
         }
       }
       
@@ -17,25 +17,85 @@ export class ResultConverter {
   }
 
   static jsonToCsv(results: GeocodingResultJson): string {
-    if (results.length === 0) return "";
+    if (results.length === 0) {
+      return "";
+    }
 
-    const allKeys = new Set<string>();
-    results.forEach(result => {
-      Object.keys(result).forEach(key => allKeys.add(key));
-    });
-
-    const headers = Array.from(allKeys);
+    const headers = this.createCsvHeaders(results);
     const csvLines = [headers.join(',')];
 
-    results.forEach(result => {
-      const row = headers.map(header => {
-        const value = (result as unknown as Record<string, unknown>)[header];
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'object') return JSON.stringify(value).replace(/,/g, ';');
-        return String(value).replace(/,/g, ';');
-      });
-      csvLines.push(row.join(','));
-    });
+    let csvBody = this.createCsvBody(results, headers);
+    csvLines.push(...csvBody);
     return csvLines.join('\n');
+  }
+
+  private static createCsvBody(results: GeocodingResultJson, headers: string[]): string[] {
+    const lines: string[] = [];
+
+    for (const result of results) {
+      const cells: string[] = [];
+
+      for (const header of headers) {
+        const value = this.getValueByPath(result, header);
+        cells.push(this.convertValueToSafeCsv(value));
+      }
+
+      lines.push(cells.join(','));
+    }
+
+    return lines;
+  }
+
+  private static toHeaderPaths(value: any, prefix: string): string[] {
+    const isObject = value !== null && typeof value === "object";
+    if (!isObject) {
+      return [prefix];
+    }
+    const keys = Object.keys(value);
+    if (keys.length === 0) {
+      return [prefix];
+    }
+
+    return keys.flatMap((key) => {
+      return this.toHeaderPaths(value[key], `${prefix}.${key}`)
+    });
+  }
+
+  private static createCsvHeaders(results: Array<Record<string, any>>): string[] {
+    const allPaths: string[] = [];
+
+    for (const row of results) {
+      for (const key of Object.keys(row)) {
+        allPaths.push(...this.toHeaderPaths(row[key], key));
+      }
+    }
+
+    return Array.from(new Set(allPaths));
+  }
+
+  private static getValueByPath(item: any, path: string): any {
+    const parts = path.split('.');
+    let currentObject = item;
+
+    for (const part of parts) {
+      if (currentObject === null || currentObject === undefined) {
+        return undefined;
+      }
+      currentObject = currentObject[part];
+    }
+    return currentObject;
+  }
+
+  private static convertValueToSafeCsv(value: any): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    let stringValue = String(value);
+
+    if (stringValue.includes('"')) {
+      stringValue = stringValue.replace(/"/g, '""');
+    }
+    const shouldAddQuotes = stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('\r') || stringValue.includes('"');
+    return shouldAddQuotes ? `"${stringValue}"` : stringValue;
   }
 }

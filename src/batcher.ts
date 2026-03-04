@@ -7,14 +7,14 @@ const BATCH_MAX_SIZE = 1000;
 export class Batcher {
   private readonly apiClient: ApiClient;
 
-  constructor() {
-    this.apiClient = new ApiClient();
-  }
-
-  geocode(items: StructuredAddress[], options: BatchGeocodeOptions): BatcherJob {
-    if (!options.apiKey || options.apiKey.trim() === "") {
+  constructor(apiKey: string) {
+    if (!apiKey || apiKey.trim() === "") {
       throw new ValidationError("API key is required");
     }
+    this.apiClient = new ApiClient(apiKey);
+  }
+
+  geocode(items: StructuredAddress[], options?: BatchGeocodeOptions): BatcherJob {
     if (!items || items.length === 0) {
       throw new ValidationError("At least one address is required");
     }
@@ -35,10 +35,7 @@ export class Batcher {
     return job;
   }
 
-  reverseGeocode(coordinates: Coordinates[], options: BatchGeocodeOptions): BatcherJob {
-    if (!options.apiKey || options.apiKey.trim() === "") {
-      throw new ValidationError("API key is required");
-    }
+  reverseGeocode(coordinates: Coordinates[], options?: BatchGeocodeOptions): BatcherJob {
     if (!coordinates || coordinates.length === 0) {
       throw new ValidationError("At least one coordinate is required");
     }

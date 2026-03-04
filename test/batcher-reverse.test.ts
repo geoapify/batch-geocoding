@@ -89,8 +89,8 @@ describe("Batcher - Reverse Geocoding E2E", () => {
     expect(json[0].lon).toBeDefined();
     expect(json[0].city).toBeDefined();
     expect(json[0].country).toBeDefined();
-    expect(json[0].formatted).toBeNull();
-    expect(json[0].street).toBeNull();
+    expect(json[0].formatted).toBeUndefined();
+    expect(json[0].street).toBeUndefined();
   }, 120000);
 
   it("should return validation if 1001 rows are passed", async () => {

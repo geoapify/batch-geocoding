@@ -123,11 +123,7 @@ export class BatcherJob {
   private notifyProgress(): void {
     const status = this.getStatus();
     for (const callback of this.progressCallbacks) {
-      try {
-        callback(status);
-      } catch {
-        // TODO: fix it
-      }
+      callback(status);
     }
   }
 

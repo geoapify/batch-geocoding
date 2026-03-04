@@ -1,0 +1,123 @@
+[
+  {
+    "datasource": {
+      "sourcename": "openstreetmap",
+      "attribution": "© OpenStreetMap contributors",
+      "license": "Open Database License",
+      "url": "https://www.openstreetmap.org/copyright"
+    },
+    "country": "Netherlands",
+    "country_code": "nl",
+    "state": "South Holland",
+    "city": "Dordrecht",
+    "postcode": "3317 JN",
+    "street": "Salvia",
+    "housenumber": "22",
+    "iso3166_2": "NL-ZH",
+    "lon": 4.6730405,
+    "lat": 51.7937328,
+    "state_code": "ZH",
+    "NUTS_1": "NL33",
+    "distance": 0,
+    "result_type": "building",
+    "formatted": "Salvia 22, 3317 JN Dordrecht, Netherlands",
+    "address_line1": "Salvia 22",
+    "address_line2": "3317 JN Dordrecht, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F36QMVF+F6",
+    "plus_code_short": "QMVF+F6 Dordrecht, South Holland, Netherlands",
+    "rank": {
+      "importance": 0.00000999999999995449,
+      "popularity": 7.022069480769957
+    },
+    "place_id": "51b188618731b11240599ae1500999e54940f00103f901afc5c7a500000000c00203"
+  },
+  {
+    "country_code": "nl",
+    "housenumber": "1",
+    "street": "Nieuwe Amstelstraat",
+    "country": "Netherlands",
+    "datasource": {
+      "sourcename": "openaddresses",
+      "attribution": "© OpenAddresses contributors",
+      "license": "BSD-3-Clause License"
+    },
+    "postcode": "1011 PL",
+    "state": "North Holland",
+    "state_code": "NH",
+    "city": "Amsterdam",
+    "district": "Centrum",
+    "suburb": "Nieuwmarkt/Lastage",
+    "lon": 4.903914,
+    "lat": 52.367367,
+    "distance": 28.822332060982028,
+    "result_type": "building",
+    "formatted": "Nieuwe Amstelstraat 1, 1011 PL Amsterdam, Netherlands",
+    "address_line1": "Nieuwe Amstelstraat 1",
+    "address_line2": "1011 PL Amsterdam, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F469W83+WH",
+    "plus_code_short": "83+WH Amsterdam, North Holland, Netherlands",
+    "iso3166_2": "NL-NH",
+    "rank": {
+      "popularity": 8.995467104553104
+    },
+    "place_id": "511096b1a19b9d1340599850c1e1052f4a40c00203e203476f70656e6164647265737365733a616464726573733a6e6c2f636f756e747279776964652d6164647265737365732d636f756e7472793a33643836643333343430383661383831"
+  },
+  {
+    "country_code": "nl",
+    "housenumber": "40",
+    "street": "Coolsingel",
+    "country": "Netherlands",
+    "datasource": {
+      "sourcename": "openaddresses",
+      "attribution": "© OpenAddresses contributors",
+      "license": "BSD-3-Clause License"
+    },
+    "postcode": "3011 AD",
+    "state": "South Holland",
+    "state_code": "ZH",
+    "city": "Rotterdam",
+    "district": "Rotterdam Centrum",
+    "suburb": "Stadsdriehoek",
+    "lon": 4.479201,
+    "lat": 51.922721,
+    "distance": 24.57420841744663,
+    "result_type": "building",
+    "formatted": "Coolsingel 40, 3011 AD Rotterdam, Netherlands",
+    "address_line1": "Coolsingel 40",
+    "address_line2": "3011 AD Rotterdam, Netherlands",
+    "timezone": {
+      "name": "Europe/Brussels",
+      "offset_STD": "+01:00",
+      "offset_STD_seconds": 3600,
+      "offset_DST": "+02:00",
+      "offset_DST_seconds": 7200,
+      "abbreviation_STD": "CET",
+      "abbreviation_DST": "CEST"
+    },
+    "plus_code": "9F36WFFH+3M",
+    "plus_code_short": "+3M Rotterdam, South Holland, Netherlands",
+    "iso3166_2": "NL-ZH",
+    "rank": {
+      "popularity": 8.935983947098983
+    },
+    "place_id": "518cd7bcaab3ea1140598d2ac3b81bf64940c00203e203476f70656e6164647265737365733a616464726573733a6e6c2f636f756e747279776964652d6164647265737365732d636f756e7472793a64373762623866393939373738623932"
+  }
+]
