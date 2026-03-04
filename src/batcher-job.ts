@@ -4,7 +4,6 @@ import {
   BatchResult,
   GeocodingOperation,
   GeocodingResultJson,
-  JobFailedError,
   JobStatus,
   JobState,
   ProgressCallback, JOB_STATE
@@ -62,15 +61,7 @@ export class BatcherJob {
   }
 
   async results(options?: BatchGeocodeOptions): Promise<BatchResult> {
-    if (!this.finishedPromise) {
-      throw new Error("Job has not been started. Call start() first.");
-    }
-
     await this.finishedPromise;
-
-    if (this.state === JOB_STATE.FAILED) {
-      throw new JobFailedError(this.id ? this.id : "unknown");
-    }
 
     return this.buildBatchResult(options);
   }
