@@ -4,7 +4,7 @@ export class ResultConverter {
   static filterJson(results: GeocodingResultJson, fields: string[]): GeocodingResultJson {
     return results.map(result => {
       const filtered = { ...result };
-      const resultRecord = filtered as Record<string, unknown>;
+      const resultRecord: any = filtered;
       
       for (const key in resultRecord) {
         if (!fields.includes(key)) {
