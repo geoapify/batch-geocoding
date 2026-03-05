@@ -1,6 +1,6 @@
 import { Batcher } from "../src/batcher";
 import TEST_API_KEY from "../env-variables";
-import { ValidationError } from "../src";
+import { JobSubmitError } from "../src";
 
 describe("Batcher - Reverse Geocoding E2E", () => {
   let batcher: Batcher;
@@ -99,11 +99,13 @@ describe("Batcher - Reverse Geocoding E2E", () => {
         .flat()
         .slice(0, 1001);
     try {
-      batcher.reverseGeocode(coordinates1001);
+      let job = batcher.reverseGeocode(coordinates1001);
+      const result = await job.results();
+      await result.json();
       fail();
     } catch (e: any) {
-      expect(e).toBeInstanceOf(ValidationError);
-      expect(e.message).toBe("Batch size should be less than 1000");
+      expect(e).toBeInstanceOf(JobSubmitError);
+      expect(e.message).toBe("Failed to submit job: \"inputs\" must contain less than or equal to 1000 items");
     }
   }, 120000);
 });

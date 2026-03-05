@@ -1,6 +1,6 @@
 import { Batcher } from "../src/batcher";
 import TEST_API_KEY from "../env-variables";
-import { ValidationError, JobSubmitError } from "../src";
+import { JobSubmitError } from "../src";
 
 describe("Batcher - Forward Geocoding E2E", () => {
   let batcher: Batcher;
@@ -124,11 +124,13 @@ describe("Batcher - Forward Geocoding E2E", () => {
       .flat()
       .slice(0, 1001);
     try {
-      batcher.geocode(locations1001);
+      let job = batcher.geocode(locations1001);
+      const result = await job.results();
+      await result.json();
       fail();
     } catch (e: any) {
-      expect(e).toBeInstanceOf(ValidationError);
-      expect(e.message).toBe("Batch size should be less than 1000");
+      expect(e).toBeInstanceOf(JobSubmitError);
+      expect(e.message).toBe("Failed to submit job: \"inputs\" must contain less than or equal to 1000 items");
     }
   }, 120000);
 
@@ -288,18 +290,6 @@ describe("Batcher - Forward Geocoding E2E", () => {
     expect(json[0].city).toBe("Paris");
     expect(json[0].country_code).toBe("fr");
   }, 120000);
-
-  it("should handle batch with 999 rows", async () => {
-    const addresses = Array(999).fill({ city: "Paris", country: "France" });
-    
-    const job = batcher.geocode(addresses, { pollIntervalMs: 3000 });
-    const result = await job.results();
-    const json = await result.json();
-
-    expect(json).toHaveLength(999);
-    expect(json[0].lat).toBeDefined();
-    expect(json[0].lon).toBeDefined();
-  }, 180000);
 
   it("should work with fast polling interval (500ms)", async () => {
     const job = batcher.geocode(

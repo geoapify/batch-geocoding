@@ -12,6 +12,7 @@ import {
 
 const DEFAULT_BASE_URL = "https://api.geoapify.com";
 const REQUEST_PARAM_LIMIT = "1";
+const DEFAULT_PRIORITY = 1;
 
 export class ApiClient {
     private readonly apiKey: string;
@@ -54,10 +55,10 @@ export class ApiClient {
             const data: any = await response.json();
 
             const results = data.results.map((item: any) => {
-                const feature = item.result.features[0];
-                if (!feature) {
+                if (!item.result.features || !item.result.features[0]) {
                     return {};
                 }
+                const feature = item.result.features[0];
                 return {
                     ...feature.properties,
                     lat: feature.geometry.coordinates[1],
@@ -92,6 +93,8 @@ export class ApiClient {
 
         if (options?.priority !== undefined) {
             body.priority = options.priority;
+        } else {
+            body.priority = DEFAULT_PRIORITY;
         }
 
         const response = await fetch(url, {
@@ -104,8 +107,9 @@ export class ApiClient {
         });
 
         if (response.status !== 202) {
+            const data: any = await response.json();
             throw new JobSubmitError(
-                `Failed to submit job: ${response.statusText}`,
+                `Failed to submit job: ${data?.message ?? response.statusText}`,
                 response.status
             );
         }
