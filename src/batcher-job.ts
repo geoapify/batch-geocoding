@@ -1,9 +1,10 @@
 import { ApiClient } from "./api-client";
 import {
-  BatchGeocodeOptions,
   BatchResult,
   GeocodingOperation,
   GeocodingResultJson,
+  OperationType,
+  ValidationError,
   JobStatus,
   JobState,
   ProgressCallback, JOB_STATE
@@ -13,7 +14,7 @@ import { ResultConverter } from "./helpers";
 const DEFAULT_POLL_INTERVAL_MS = 1000;
 
 export class BatcherJob {
-  public id: string | undefined;
+  private jobId: string | undefined;
 
   private readonly pollIntervalMs: number;
 
@@ -44,6 +45,8 @@ export class BatcherJob {
       this.finishedResolve = resolve;
       this.finishedReject = reject;
     });
+    // Prevent process-level unhandled-rejection warnings when consumers never call getResults().
+    this.finishedPromise.catch(() => {});
 
     await this.submitJob();
   }
@@ -60,16 +63,24 @@ export class BatcherJob {
     return { state: this.state };
   }
 
-  async results(options?: BatchGeocodeOptions): Promise<BatchResult> {
+  getId(): string | undefined {
+    return this.jobId;
+  }
+
+  async getResults(): Promise<BatchResult> {
+    if (!this.finishedPromise) {
+      throw new ValidationError("Job has not been started");
+    }
+
     await this.finishedPromise;
 
-    return this.buildBatchResult(options);
+    return this.buildBatchResult();
   }
 
   private async submitJob(): Promise<void> {
     try {
       const response = await this.apiClient.submitJob(this.operation);
-      this.id = response.id;
+      this.jobId = response.id;
       this.updateState(JOB_STATE.PENDING);
       this.pollingTimer = setTimeout(() => this.poll(), this.pollIntervalMs);
     } catch (error) {
@@ -79,10 +90,10 @@ export class BatcherJob {
   }
 
   private async poll(): Promise<void> {
-    if (!this.id) return;
+    if (!this.jobId) return;
 
     try {
-      const result = await this.apiClient.getJobStatus(this.id);
+      const result = await this.apiClient.getJobStatus(this.jobId);
 
       if (result.pending) {
         this.updateState(JOB_STATE.PENDING);
@@ -118,29 +129,58 @@ export class BatcherJob {
     }
   }
 
-  private buildBatchResult(options?: BatchGeocodeOptions): BatchResult {
-    const preserveFields = options?.preserveFields ?? this.operation.options?.preserveFields;
-    const hasFilteredFields = (preserveFields && preserveFields.length > 0);
+  private buildBatchResult(): BatchResult {
+    const preserveFields = this.operation.options?.preserveFields;
+    const preservedResults = this.appendPreservedFields(this.resultsCache, preserveFields);
 
     return {
       json: async (): Promise<GeocodingResultJson> => {
-        let filteredResults = this.resultsCache;
-        
-        if (!preserveFields || preserveFields.length === 0) {
-          return filteredResults;
-        }
-        
-        return ResultConverter.filterJson(filteredResults, preserveFields);
+        return preservedResults;
       },
 
       csv: async (): Promise<string> => {
-        let filteredResults = this.resultsCache;
-        if(hasFilteredFields) {
-          filteredResults = ResultConverter.filterJson(filteredResults, preserveFields);
-        }
-
-        return ResultConverter.jsonToCsv(filteredResults);
+        return ResultConverter.jsonToCsv(preservedResults);
       }
     };
+  }
+
+  private appendPreservedFields(results: GeocodingResultJson, preserveFields?: string[]): GeocodingResultJson {
+    if (!preserveFields || preserveFields.length === 0) {
+      return results;
+    }
+
+    const inputRows = this.getInputRows();
+    return results.map((result, index) => {
+      const inputRow = inputRows[index] ?? {};
+      const preserved: Record<string, unknown> = {};
+
+      for (const field of preserveFields) {
+        if (Object.prototype.hasOwnProperty.call(inputRow, field)) {
+          preserved[`preserved_${field}`] = inputRow[field];
+        }
+      }
+
+      if (Object.keys(preserved).length === 0) {
+        return result;
+      }
+
+      return {
+        ...(result as Record<string, unknown>),
+        ...preserved
+      };
+    }) as GeocodingResultJson;
+  }
+
+  private getInputRows(): Array<Record<string, unknown>> {
+    if (this.operation.type === OperationType.Forward) {
+      return (this.operation.addresses ?? []).map((item) => ({ ...item }));
+    }
+
+    return (this.operation.coordinates ?? []).map((coord) => {
+      if (Array.isArray(coord)) {
+        return { lon: coord[0], lat: coord[1] };
+      }
+      return { ...coord };
+    });
   }
 }

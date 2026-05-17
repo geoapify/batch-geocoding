@@ -1,18 +1,33 @@
 import { Batcher } from "../src/batcher";
-import TEST_API_KEY from "../env-variables";
+import TEST_API_KEY, { hasTestApiKey } from "../env-variables";
 import { JobSubmitError } from "../src";
 
-describe("Batcher - Reverse Geocoding E2E", () => {
+(hasTestApiKey ? describe : describe.skip)("Batcher - Reverse Geocoding E2E", () => {
   let batcher: Batcher;
+  let lastJob: { getId: () => string | undefined } | null = null;
 
   beforeAll(() => {
     batcher = new Batcher(TEST_API_KEY);
+    const originalReverseGeocode = batcher.reverseGeocode.bind(batcher);
+    batcher.reverseGeocode = ((...args: Parameters<Batcher["reverseGeocode"]>) => {
+      const job = originalReverseGeocode(...args);
+      lastJob = job;
+      return job;
+    }) as Batcher["reverseGeocode"];
+  });
+
+  beforeEach(() => {
+    lastJob = null;
+  });
+
+  afterEach(() => {
+    console.log(`[task-id] ${expect.getState().currentTestName}: ${lastJob?.getId() ?? "not-assigned"}`);
   });
 
   it("should reverse geocode single coordinate", async () => {
     const job = batcher.reverseGeocode([{ lat: 48.8566, lon: 2.3522 }]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -27,7 +42,7 @@ describe("Batcher - Reverse Geocoding E2E", () => {
       { lat: 51.5074, lon: -0.1278 }   // London
     ]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(3);
@@ -42,7 +57,7 @@ describe("Batcher - Reverse Geocoding E2E", () => {
       [13.4050, 52.5200]   // Berlin [lon, lat]
     ]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(2);
@@ -55,7 +70,7 @@ describe("Batcher - Reverse Geocoding E2E", () => {
       { lat: 41.9028, lon: 12.4964 }  // Rome
     ]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const csv = await result.csv();
 
     expect(typeof csv).toBe("string");
@@ -69,19 +84,19 @@ describe("Batcher - Reverse Geocoding E2E", () => {
 
     expect(job).toBeDefined();
     
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
     
     expect(Array.isArray(json)).toBe(true);
   }, 120000);
 
-  it("should filter reverse geocoding results with preserveFields", async () => {
+  it("should preserve reverse geocoding input fields with preserveFields", async () => {
     const job = batcher.reverseGeocode(
-      [{ lat: 48.8566, lon: 2.3522 }],  // Paris
-      { preserveFields: ["lat", "lon", "city", "country"] }
+      [{ lat: 48.8566, lon: 2.3522, id: "reverse-paris-1" } as any],  // Paris
+      { preserveFields: ["id"] }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -89,8 +104,7 @@ describe("Batcher - Reverse Geocoding E2E", () => {
     expect(json[0].lon).toBeDefined();
     expect(json[0].city).toBeDefined();
     expect(json[0].country).toBeDefined();
-    expect(json[0].formatted).toBeUndefined();
-    expect(json[0].street).toBeUndefined();
+    expect((json[0] as any)["preserved_id"]).toBe("reverse-paris-1");
   }, 120000);
 
   it("should return validation if 1001 rows are passed", async () => {
@@ -100,7 +114,7 @@ describe("Batcher - Reverse Geocoding E2E", () => {
         .slice(0, 1001);
     try {
       let job = batcher.reverseGeocode(coordinates1001);
-      const result = await job.results();
+      const result = await job.getResults();
       await result.json();
       fail();
     } catch (e: any) {

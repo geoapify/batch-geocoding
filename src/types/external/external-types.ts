@@ -1,5 +1,6 @@
 // External - User-facing types (what users pass in or receive back)
 export interface StructuredAddress {
+  [key: string]: unknown;
   name?: string;
   housenumber?: string;
   street?: string;
@@ -9,7 +10,15 @@ export interface StructuredAddress {
   country?: string;
 }
 
+export interface FreeFormAddress {
+  [key: string]: unknown;
+  text: string;
+}
+
+export type GeocodeAddress = StructuredAddress | FreeFormAddress;
+
 export interface CoordinatesObject {
+  [key: string]: unknown;
   lat: number;
   lon: number;
 }
@@ -22,12 +31,15 @@ export interface BatchGeocodeOptions {
   pollIntervalMs?: number;
   preserveFields?: string[];
   priority?: number;
-  common?: BatchGeocodeCommonOptions;
+  geocodingParams?: GeocodeOptions;
 }
 
-export interface BatchGeocodeCommonOptions {
+export interface GeocodeBaseOptions {
   type?: LocationType;
   lang?: string;
+}
+
+export interface ForwardGeocodeOptions extends GeocodeBaseOptions {
   filter?: {
     circle?: ByCircleOptions;
     countrycode?: ByCountryCodeOptions;
@@ -41,6 +53,8 @@ export interface BatchGeocodeCommonOptions {
     proximity?: ByProximityOptions;
   }
 }
+
+export type GeocodeOptions = GeocodeBaseOptions | ForwardGeocodeOptions;
 
 export interface ByProximityOptions {
     lon: number;
@@ -84,6 +98,7 @@ export interface BatchResult {
 export type GeocodingResultJson = GeocodingResult[] | ReverseGeocodingResult[];
 
 export interface GeocodingResult {
+  [key: string]: unknown;
   query?: GeocodingQuery;
   datasource?: DataSource;
   name?: string;
@@ -110,6 +125,7 @@ export interface GeocodingResult {
 }
 
 export interface ReverseGeocodingResult {
+  [key: string]: unknown;
   query?: ReverseGeocodingQuery;
   datasource?: DataSource;
   name?: string;

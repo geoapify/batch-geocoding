@@ -74,6 +74,10 @@ export class ResultConverter {
   }
 
   private static getValueByPath(item: any, path: string): any {
+    if (item !== null && item !== undefined && Object.prototype.hasOwnProperty.call(item, path)) {
+      return item[path];
+    }
+
     const parts = path.split('.');
     let currentObject = item;
 

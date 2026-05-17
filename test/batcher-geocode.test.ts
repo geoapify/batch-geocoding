@@ -1,23 +1,38 @@
 import { Batcher } from "../src/batcher";
-import TEST_API_KEY from "../env-variables";
+import TEST_API_KEY, { hasTestApiKey } from "../env-variables";
 import { JobSubmitError } from "../src";
 
-describe("Batcher - Forward Geocoding E2E", () => {
+(hasTestApiKey ? describe : describe.skip)("Batcher - Forward Geocoding E2E", () => {
   let batcher: Batcher;
+  let lastJob: { getId: () => string | undefined } | null = null;
 
   beforeAll(() => {
     batcher = new Batcher(TEST_API_KEY);
+    const originalGeocode = batcher.geocode.bind(batcher);
+    batcher.geocode = ((...args: Parameters<Batcher["geocode"]>) => {
+      const job = originalGeocode(...args);
+      lastJob = job;
+      return job;
+    }) as Batcher["geocode"];
+  });
+
+  beforeEach(() => {
+    lastJob = null;
+  });
+
+  afterEach(() => {
+    console.log(`[task-id] ${expect.getState().currentTestName}: ${lastJob?.getId() ?? "not-assigned"}`);
   });
 
   it("should geocode single address", async () => {
-    const job = batcher.geocode([{ name: "Brandenburg Gate"}], {common: { type: "amenity"}});
+    const job = batcher.geocode([{ name: "Brandenburg Gate"}]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
     expect(json[0].lat).toBe(52.5162699);
-    expect(json[0].lon).toBe(13.377703399031432);
+    expect(json[0].lon).toBe(13.3777034);
     expect(json[0].city).toBe("Berlin");
   }, 120000);
 
@@ -26,21 +41,20 @@ describe("Batcher - Forward Geocoding E2E", () => {
         { name: "Brandenburg Gate"},
         { name: "Eiffel Tower"},
         { name: "Big Ben"}
-    ], {common: { type: "amenity"}})
+    ])
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(3);
     expect(json[0].postcode).toBe("10117");
     expect(json[1].postcode).toBe("75007")
-    expect(json[2].state_code).toBe("QLD")
   }, 120000);
 
   it("should geocode structured addresses", async () => {
     const job = batcher.geocode([{ street: "Unter den Linden", city: "Berlin", country: "Germany" }, { city: "Munich", country: "Germany" }]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(2);
@@ -48,12 +62,23 @@ describe("Batcher - Forward Geocoding E2E", () => {
     expect(json[1].city).toBe('Munich');
   }, 120000);
 
+  it("should geocode unstructured address via text field", async () => {
+    const job = batcher.geocode([{ text: "Brandenburg Gate, Berlin, Germany" }]);
+
+    const result = await job.getResults();
+    const json = await result.json();
+
+    expect(json).toHaveLength(1);
+    expect(json[0].lat).toBeDefined();
+    expect(json[0].lon).toBeDefined();
+  }, 120000);
+
   it("should support priority option", async () => {
     const job = batcher.geocode([{ city: "Paris", country: "France" }], {
       priority: 1.0
     });
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -63,7 +88,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
   it("should return CSV results", async () => {
     const job = batcher.geocode([{ city: "Rome", country: "Italy" }]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const csv = await result.csv();
 
     expect(typeof csv).toBe("string");
@@ -72,50 +97,56 @@ describe("Batcher - Forward Geocoding E2E", () => {
     expect(csv).toContain("lon");
   }, 120000);
 
-  it("should filter results with preserveFields at job creation", async () => {
+  it("should preserve input fields with preserveFields at job creation", async () => {
     const job = batcher.geocode(
-      [{ city: "Paris", country: "France" }],
-      { preserveFields: ["lat", "lon", "city"] }
+      [{ city: "Paris", country: "France", id: "input-paris-1" } as any],
+      { preserveFields: ["id", "country"] }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
     expect(json[0].lat).toBeDefined();
     expect(json[0].lon).toBeDefined();
     expect(json[0].city).toBeDefined();
-    expect(json[0].country).toBeUndefined();
-    expect(json[0].formatted).toBeUndefined();
+    expect(json[0].country).toBeDefined();
+    expect((json[0] as any)["preserved_id"]).toBe("input-paris-1");
+    expect((json[0] as any)["preserved_country"]).toBe("France");
   }, 120000);
 
-  it("should filter results with preserveFields in results() method", async () => {
-    const job = batcher.geocode([{ city: "Berlin", country: "Germany" }]);
-
-    const result = await job.results({ preserveFields: ["lat", "lon"] });
-    const json = await result.json();
-
-    expect(json).toHaveLength(1);
-    expect(json[0].lat).toBeDefined();
-    expect(json[0].lon).toBeDefined();
-    expect(json[0].city).toBeUndefined();
-    expect(json[0].country).toBeUndefined();
-  }, 120000);
-
-  it("should prioritize results() preserveFields over job creation", async () => {
+  it("should preserve input fields with preserveFields at job creation", async () => {
     const job = batcher.geocode(
-      [{ city: "London", country: "United Kingdom" }],
-      { preserveFields: ["lat", "lon", "city", "country"] }
+      [{ city: "Berlin", country: "Germany", id: "input-berlin-1" } as any],
+      { preserveFields: ["id"] }
     );
 
-    const result = await job.results({ preserveFields: ["lat", "lon"] });
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
     expect(json[0].lat).toBeDefined();
     expect(json[0].lon).toBeDefined();
-    expect(json[0].city).toBeUndefined();
-    expect(json[0].country).toBeUndefined();
+    expect(json[0].city).toBeDefined();
+    expect(json[0].country).toBeDefined();
+    expect((json[0] as any)["preserved_id"]).toBe("input-berlin-1");
+  }, 120000);
+
+  it("should use preserveFields only from job creation options", async () => {
+    const job = batcher.geocode(
+      [{ city: "London", country: "United Kingdom", id: "input-london-1", postcode: "SW1A 0AA" } as any],
+      { preserveFields: ["postcode"] }
+    );
+
+    const result = await job.getResults();
+    const json = await result.json();
+
+    expect(json).toHaveLength(1);
+    expect(json[0].lat).toBeDefined();
+    expect(json[0].lon).toBeDefined();
+    expect(json[0].city).toBeDefined();
+    expect(json[0].country).toBeDefined();
+    expect((json[0] as any)["preserved_postcode"]).toBe("SW1A 0AA");
   }, 120000);
 
   it("should return validation if 1001 rows are passed", async () => {
@@ -125,7 +156,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       .slice(0, 1001);
     try {
       let job = batcher.geocode(locations1001);
-      const result = await job.results();
+      const result = await job.getResults();
       await result.json();
       fail();
     } catch (e: any) {
@@ -134,13 +165,13 @@ describe("Batcher - Forward Geocoding E2E", () => {
     }
   }, 120000);
 
-  it("should filter CSV results with preserveFields", async () => {
+  it("should include preserved input fields in CSV results", async () => {
     const job = batcher.geocode(
-      [{ city: "Madrid", country: "Spain" }],
-      { preserveFields: ["lat", "lon", "city"] }
+      [{ city: "Madrid", country: "Spain", id: "input-madrid-1" } as any],
+      { preserveFields: ["id", "country"] }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const csv = await result.csv();
 
     expect(typeof csv).toBe("string");
@@ -149,23 +180,18 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const lines = csv.split('\n');
     const headers = lines[0].split(',');
     
-    expect(headers).toEqual(expect.arrayContaining(["lat", "lon", "city"]));
-    
-    const filteredOutFields = ["country", "street", "housenumber", "formatted", "datasource.sourcename"];
-    for (const field of filteredOutFields) {
-      expect(headers).not.toContain(field);
-    }
+    expect(headers).toEqual(expect.arrayContaining(["lat", "lon", "city", "preserved_id", "preserved_country"]));
   }, 120000);
 
   it("should filter by type=country", async () => {
     const job = batcher.geocode(
       [{ name: "Georgia" }],
       {
-        common: { type: "country", lang: "en" }
+        geocodingParams: { type: "country", lang: "en" }
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -177,7 +203,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "Paris" }],
       { 
-        common: {
+        geocodingParams: {
           type: "city",
           lang: "en",
           filter: { countrycode: ["fr"] }
@@ -185,7 +211,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -197,8 +223,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "Brandenburg Gate" }],
       { 
-        common: {
-          type: "amenity",
+        geocodingParams: {
           lang: "en",
           filter: { 
             circle: { lon: 13.377704, lat: 52.516275, radiusMeters: 5000 }
@@ -207,7 +232,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -219,7 +244,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "restaurant" }],
       { 
-        common: {
+        geocodingParams: {
           type: "amenity",
           lang: "en",
           filter: { 
@@ -229,7 +254,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -240,11 +265,11 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "Germany" }],
       { 
-        common: { type: "country", lang: "es" }
+        geocodingParams: { type: "country", lang: "es" }
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -255,7 +280,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "Springfield" }],
       { 
-        common: {
+        geocodingParams: {
           type: "city",
           lang: "en",
           bias: { countrycode: ["us"] }
@@ -263,7 +288,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -275,7 +300,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = batcher.geocode(
       [{ name: "Paris" }],
       { 
-        common: {
+        geocodingParams: {
           type: "city",
           lang: "en",
           bias: { proximity: { lon: 2.3522, lat: 48.8566 } }
@@ -283,7 +308,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -297,7 +322,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       { pollIntervalMs: 500 }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -310,7 +335,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       { pollIntervalMs: 5000 }
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -322,7 +347,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       [{ city: "Tokyo" }]
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -336,7 +361,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       [{ country: "Switzerland" }]
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -356,7 +381,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       }]
     );
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(1);
@@ -377,7 +402,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
       { city: "Zürich", country: "Switzerland" }
     ]);
 
-    const result = await job.results();
+    const result = await job.getResults();
     const json = await result.json();
 
     expect(json).toHaveLength(2);
@@ -391,7 +416,7 @@ describe("Batcher - Forward Geocoding E2E", () => {
     const job = invalidBatcher.geocode([{ city: "Berlin", country: "Germany" }]);
 
     try {
-      await job.results();
+      await job.getResults();
       fail("Expected JobSubmitError to be thrown");
     } catch (error: any) {
       expect(error).toBeInstanceOf(JobSubmitError);

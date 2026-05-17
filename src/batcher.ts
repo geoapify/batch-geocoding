@@ -1,6 +1,6 @@
 import { ApiClient } from "./api-client";
 import { BatcherJob } from "./batcher-job";
-import { BatchGeocodeOptions, Coordinates, OperationType, StructuredAddress, ValidationError } from "./types";
+import { BatchGeocodeOptions, Coordinates, GeocodeAddress, OperationType, ValidationError } from "./types";
 
 export class Batcher {
   private readonly apiClient: ApiClient;
@@ -12,7 +12,7 @@ export class Batcher {
     this.apiClient = new ApiClient(apiKey);
   }
 
-  geocode(items: StructuredAddress[], options?: BatchGeocodeOptions): BatcherJob {
+  geocode(items: GeocodeAddress[], options?: BatchGeocodeOptions): BatcherJob {
     if (!items || items.length === 0) {
       throw new ValidationError("At least one address is required");
     }

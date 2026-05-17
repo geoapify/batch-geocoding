@@ -1,8 +1,10 @@
 import {
-    ApiError, BatchGeocodeCommonOptions,
+    ApiError,
     BatchGeocodeOptions,
     BatchInput,
     BatchRequestBody,
+    ForwardGeocodeOptions,
+    GeocodeBaseOptions,
     GeocodingOperation,
     JobStatusResult,
     JobSubmitError,
@@ -73,7 +75,7 @@ export class ApiClient {
             };
         }
 
-        const errorBody = await response.json();
+        const errorBody = await this.parseErrorBody(response);
         throw new ApiError(
             `Failed to get job status: ${response.statusText}`,
             response.status,
@@ -107,9 +109,10 @@ export class ApiClient {
         });
 
         if (response.status !== 202) {
-            const data: any = await response.json();
+            const data = await this.parseErrorBody(response);
+            const errorMessage = this.resolveErrorMessage(data, response.statusText);
             throw new JobSubmitError(
-                `Failed to submit job: ${data?.message ?? response.statusText}`,
+                `Failed to submit job: ${errorMessage}`,
                 response.status
             );
         }
@@ -122,29 +125,35 @@ export class ApiClient {
         let params: any = {
             limit: REQUEST_PARAM_LIMIT
         }
-        if (!options || !options.common) {
+        if (!options || !options.geocodingParams) {
             return params;
         } else {
-            let common = options.common;
-            if (common.type) {
-                params['type'] = common.type;
+            let geocodingParams = options.geocodingParams;
+            if (geocodingParams.type) {
+                params['type'] = geocodingParams.type;
             }
-            if (common.lang) {
-                params['lang'] = common.lang;
+            if (geocodingParams.lang) {
+                params['lang'] = geocodingParams.lang;
             }
-            let filters = this.getFilters(common);
-            if (filters && filters.length > 0) {
-                params['filter'] = filters.join('|');
-            }
-            let biases = this.getBiases(common);
-            if (biases && biases.length > 0) {
-                params['bias'] = biases.join('|');
+            if (this.hasForwardGeocodeOptions(geocodingParams)) {
+                let filters = this.getFilters(geocodingParams);
+                if (filters && filters.length > 0) {
+                    params['filter'] = filters.join('|');
+                }
+                let biases = this.getBiases(geocodingParams);
+                if (biases && biases.length > 0) {
+                    params['bias'] = biases.join('|');
+                }
             }
         }
         return params;
     }
 
-    private getFilters(common: BatchGeocodeCommonOptions): string[] {
+    private hasForwardGeocodeOptions(common: GeocodeBaseOptions | ForwardGeocodeOptions): common is ForwardGeocodeOptions {
+        return "filter" in common || "bias" in common;
+    }
+
+    private getFilters(common: ForwardGeocodeOptions): string[] {
         const filters: string[] = [];
         if (!common.filter) {
             return filters;
@@ -171,7 +180,7 @@ export class ApiClient {
         return filters;
     }
 
-    private getBiases(common: BatchGeocodeCommonOptions): string[] {
+    private getBiases(common: ForwardGeocodeOptions): string[] {
         const biases: string[] = [];
         if (!common.bias) {
             return biases;
@@ -206,5 +215,37 @@ export class ApiClient {
 
     private isLongitude(num: any) {
         return num !== '' && num !== null && isFinite(num) && Math.abs(num) <= 180;
+    }
+
+    private async parseErrorBody(response: Response): Promise<unknown> {
+        try {
+            const bodyText = await response.text();
+            if (!bodyText) {
+                return null;
+            }
+
+            try {
+                return JSON.parse(bodyText);
+            } catch {
+                return bodyText;
+            }
+        } catch {
+            return null;
+        }
+    }
+
+    private resolveErrorMessage(errorBody: unknown, fallbackStatusText: string): string {
+        if (errorBody && typeof errorBody === "object" && "message" in errorBody) {
+            const message = (errorBody as { message?: unknown }).message;
+            if (typeof message === "string" && message.trim().length > 0) {
+                return message;
+            }
+        }
+
+        if (typeof errorBody === "string" && errorBody.trim().length > 0) {
+            return errorBody;
+        }
+
+        return fallbackStatusText;
     }
 }

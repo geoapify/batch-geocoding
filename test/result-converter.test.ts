@@ -52,5 +52,19 @@ describe("ResultConverter - jsonToCsv", () => {
       expect(csv).toContain("city");
       expect(csv).toContain("Paris");
     });
+
+    it("should support flat keys with prefixes", () => {
+      const results: any = [
+        {
+          lat: 48.8566,
+          lon: 2.3522,
+          preserved_id: "input-1"
+        }
+      ];
+
+      const csv = ResultConverter.jsonToCsv(results);
+      expect(csv).toContain("preserved_id");
+      expect(csv).toContain("input-1");
+    });
   });
 });

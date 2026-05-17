@@ -28,7 +28,7 @@ async function forwardGeocodingExample(): Promise<void> {
         console.log(`📊 Status: ${status.state}`);
     });
 
-    const result = await job.results();
+    const result = await job.getResults();
     const data = await result.json() as GeocodingResult[];
 
     console.log('\nGeocoding Results:');
@@ -55,7 +55,7 @@ async function reverseGeocodingExample(): Promise<void> {
         console.log(`📊 Status: ${status.state}`);
     });
 
-    const result = await job.results();
+    const result = await job.getResults();
     const data = await result.json() as ReverseGeocodingResult[];
 
     console.log('\nReverse Geocoding Results:');
