@@ -1,21 +1,36 @@
 {
   "name": "@geoapify/batch-geocoding",
   "version": "1.0.0",
-  "description": "Batch forward and reverse geocoding using Geoapify's async batch engine with a simple Job-based API",
-  "main": "dist/batch-geocoding.js",
-  "types": "dist/batch-geocoding.d.ts",
+  "description": "Batch geocoding library with Geoapify API to geocode addresses and reverse geocode latitude/longitude coordinates.",
+  "main": "dist/index.js",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "unpkg": "dist/batch-geocoding.js",
+  "jsdelivr": "dist/batch-geocoding.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "npm run clean && npm run compile && webpack",
+    "build": "npm run clean && npm run compile && webpack && npm run compile:esm",
     "compile": "tsc",
+    "compile:esm": "webpack --config webpack.esm.config.js && npm run compile:esm:entry",
+    "compile:esm:entry": "node -e \"const fs=require('fs');const lines=[\\\"import lib from './bundle.mjs';\\\",\\\"export const Batcher = lib.Batcher;\\\",\\\"export const BatcherJob = lib.BatcherJob;\\\",\\\"export const ApiClient = lib.ApiClient;\\\",\\\"export const JOB_STATE = lib.JOB_STATE;\\\",\\\"export const BatchGeocodingError = lib.BatchGeocodingError;\\\",\\\"export const ValidationError = lib.ValidationError;\\\",\\\"export const ApiError = lib.ApiError;\\\",\\\"export const JobSubmitError = lib.JobSubmitError;\\\",\\\"export default lib;\\\",\\\"\\\"];fs.mkdirSync('dist/esm',{recursive:true});fs.writeFileSync('dist/esm/index.mjs',lines.join('\\\\n'));\"",
     "compile:env": "tsc env-variables.ts --module commonjs --esModuleInterop",
     "clean": "rm -rf dist",
     "test": "jest",
     "demo:prepare": "npm run compile:env && npm run build",
     "demo:ts": "npm run demo:prepare && ts-node demo/typescript/basic-usage.ts",
-    "demo:js": "npm run demo:prepare && node demo/javascript/basic-usage.js"
+    "demo:js": "npm run demo:prepare && node demo/javascript/basic-usage.js",
+    "demo:esm": "npm run demo:prepare && node demo/javascript/basic-usage-esm.mjs",
+    "demo:cjs:pkg": "npm run demo:prepare && node demo/javascript/basic-usage-cjs-package.js"
   },
   "repository": {
     "type": "git",
