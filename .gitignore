@@ -25,5 +25,4 @@ npm-debug.log*
 # Optional eslint cache
 .eslintcache
 /env-variables.js
-.env
-.env.local
+config.bat
