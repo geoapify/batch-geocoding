@@ -12,8 +12,6 @@ The package is designed for reliable bulk processing with a simple integration f
 
 - [Features](#features)
 - [Installation](#installation)
-- [Installation: npm (recommended)](#npm-recommended)
-- [Installation: unpkg (browser quick start)](#unpkg-browser-quick-start)
 - [Usage](#usage)
 - [Code Samples](#code-samples)
 - [API Reference](#api-reference)
@@ -134,8 +132,10 @@ const csvResult = await reverseJob.getResults().then(result => result.csv());
 ```ts
 import { Batcher } from "@geoapify/batch-geocoding";
 
+// 1) Create SDK client with your API key (Sign up on https://www.geoapify.com/ to get a Free API key).
 const batcher = new Batcher("YOUR_API_KEY");
 
+// 2) Submit a forward-geocoding batch job.
 const job = batcher.geocode(
   [
     {
@@ -156,6 +156,7 @@ const job = batcher.geocode(
   }
 );
 
+// 3) Wait for completion and read JSON results.
 const jsonResult = await job.getResults().then(result => result.json());
 ```
 
@@ -164,8 +165,10 @@ const jsonResult = await job.getResults().then(result => result.json());
 ```ts
 import { Batcher } from "@geoapify/batch-geocoding";
 
+// 1) Create SDK client with your API key (get one at https://www.geoapify.com/).
 const batcher = new Batcher("YOUR_API_KEY");
 
+// 2) Submit a reverse-geocoding batch job.
 const job = batcher.reverseGeocode(
   [
     { lat: 40.7794, lon: -73.9632, custom: "met-1" },
@@ -177,6 +180,7 @@ const job = batcher.reverseGeocode(
   }
 );
 
+// 3) Wait for completion and read CSV results.
 const csvResults = await job.getResults().then(result => result.csv());
 ```
 
@@ -185,8 +189,10 @@ const csvResults = await job.getResults().then(result => result.csv());
 ```ts
 import { Batcher } from "@geoapify/batch-geocoding";
 
+// 1) Create SDK client with your API key (get one at https://www.geoapify.com/).
 const batcher = new Batcher("YOUR_API_KEY");
 
+// 2) Submit structured address rows.
 const job = batcher.geocode(
   [
     {
@@ -214,6 +220,7 @@ const job = batcher.geocode(
   }
 );
 
+// 3) Wait for completion and read JSON results.
 const jsonResult = await job.getResults().then(result => result.json());
 ```
 
@@ -222,8 +229,10 @@ const jsonResult = await job.getResults().then(result => result.json());
 ```ts
 import { Batcher } from "@geoapify/batch-geocoding";
 
+// 1) Create SDK client with your API key (get one at https://www.geoapify.com/).
 const batcher = new Batcher("YOUR_API_KEY");
 
+// 2) Reverse geocode points and request postcode-level results.
 const job = batcher.reverseGeocode(
   [
     { lat: 40.7794, lon: -73.9632, coordinateId: "point-1" },
@@ -235,19 +244,21 @@ const job = batcher.reverseGeocode(
   }
 );
 
+// 3) Wait for completion and read JSON results.
 const postcodeResults = await job.getResults().then(result => result.json());
 ```
 
 ### Example 5: Process a Big Batch (>1000 rows) with Rate Limiting
 
 Use this pattern when you need to process more than 1000 inputs.  
-The example splits data into chunks of up to 1000 rows, submits chunk-jobs through `@geoapify/request-rate-limiter`, and merges all chunk results into one array.
+The example splits data into chunks of up to 1000 rows, submits chunk-jobs through [`@geoapify/request-rate-limiter`](https://www.npmjs.com/package/@geoapify/request-rate-limiter), and merges all chunk results into one array.
 
 ```ts
 import { Batcher, FreeFormAddress } from "@geoapify/batch-geocoding";
 import RequestRateLimiter from "@geoapify/request-rate-limiter";
 
 const API_KEY = process.env.GEOAPIFY_API_KEY ?? "";
+// 1) Create SDK client.
 const batcher = new Batcher(API_KEY);
 
 const allAddresses: FreeFormAddress[] = [
@@ -264,9 +275,10 @@ const chunkArray = <T>(arr: T[], size: number): T[][] => {
   return chunks;
 };
 
+// 2) Split a large input into <=1000-row chunks.
 const chunks = chunkArray(allAddresses, MAX_BATCH_SIZE);
 
-// Each function submits one chunk as a separate batch job.
+// 3) Create one async request function per chunk.
 const requests = chunks.map((chunk, chunkIndex) => {
   return async () => {
     const job = batcher.geocode(chunk, {
@@ -278,7 +290,7 @@ const requests = chunks.map((chunk, chunkIndex) => {
   };
 });
 
-// Process up to 2 chunk-jobs per second.
+// 4) Process chunk-jobs with controlled submission rate.
 const chunkResults = await RequestRateLimiter.rateLimitedRequests(
   requests,
   2,      // maxRequests
@@ -290,9 +302,21 @@ const chunkResults = await RequestRateLimiter.rateLimitedRequests(
   }
 );
 
+// 5) Merge chunk results.
 const mergedResults = chunkResults.flatMap(item => item.rows);
 console.log("Total rows:", mergedResults.length);
 ```
+
+What this example does:
+1. Splits the full input into chunks of `1000` (`MAX_BATCH_SIZE`), because one batch job supports up to 1000 rows.
+2. Creates one async request function per chunk; each function submits a separate batch job.
+3. Uses `RequestRateLimiter.rateLimitedRequests(requests, 2, 1000, ...)` to limit submission rate to 2 chunk-jobs per second.
+4. Waits for all chunk jobs to finish and merges all chunk results into `mergedResults`.
+
+Tuning options:
+1. Increase or decrease `MAX_BATCH_SIZE` (up to `1000`) based on your input size.
+2. Adjust `maxRequests` and `intervalMs` (`2`, `1000` in the sample) to match your API plan limits.
+3. Use `priority` to balance cost vs processing time (for example `0.5` for lower cost).
 
 ## API Reference
 
